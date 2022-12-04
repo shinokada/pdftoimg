@@ -96,9 +96,11 @@ while (($# > 0)); do
         ;;
     -s | --single)
         singlefile="-singlefile"
+        shift
         ;;
     -h | --help)
         usage
+        exit 0
         ;;
     *) # unknown flag/switch
         POSITIONAL+=("$1")

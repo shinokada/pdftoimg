@@ -9,7 +9,7 @@
 # Global variables
 
 script_name=$(basename "$0")
-version="v0.0.3"
+version="v0.1.1"
 ext="png"
 work_dir=$(pwd)
 # all=false

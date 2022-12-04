@@ -1,3 +1,21 @@
+fn_convert() {
+    # set work_dir for ls at the end
+    work_dir=$1
+    for file in "$1"/*; do
+        if [[ $file == *.pdf ]]; then
+            filename="${file%.*}"
+            # echo "$filename"
+            # check if the length of $singlefile is greater than 0
+            if [[ -n "$singlefile" ]]; then
+                # don't add quotes for $2
+                pdftoppm "$file" "$filename" -"${ext}" -f 1 "$singlefile" -scale-to-x "$width" -scale-to-y "$height" $2
+            else
+                pdftoppm "$file" "$filename" -"${ext}" -f 1 -scale-to-x "$width" -scale-to-y "$height" $2
+            fi
+        fi
+    done
+}
+
 check_cmd() {
     if [ ! "$(command -v "$1")" ]; then
         app=$1

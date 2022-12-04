@@ -12,10 +12,8 @@ script_name=$(basename "$0")
 version="v0.0.3"
 ext="png"
 work_dir=$(pwd)
-width=160
-height=227
-all=false
-singlefile="-singlefile"
+# all=false
+
 ppmopt=""
 
 ############## Functions ###############
@@ -30,41 +28,46 @@ $script_name
 Description: 
 ============
 This script is a wrapper for Poppler/pdftoimg. This converts pdf files to image files. 
-The default dimensions: width ${width}px, height ${height}px. 
 
 Usage:  $script_name [ -d dir_name ][ -j ][ -v ][ -s 200 200 ][ ... ]
 ======
     -j  flag. jpeg (Default png) 
     -h  flag. Show the help 
     -v  flag. Get the tool version  
-    -s  switch. Size of image (Default: ${width}px x ${height}px)
-    -a  flag. All pages. Default: false. Convert a single page.
+    -g  Height of image
+    -w  Width of image 
 
 Check more pdftoppm usages at https://www.mankier.com/1/pdftoppm.
 
 Examples: 
 =========
     # Convert the first page of all pdfs in the current directory to png files.
-    $ pdftoimg
+    $ pdftoimg -s
 
     # Set a target directory.
-    $ pdftoimg path/to/dir
+    $ pdftoimg -s path/to/dir
 
     # Convert the first page of all pdfs in the current directory to dimensions 200x250px png files.
-    $ pdftoimg -s 200 250
-    $ pdftoimg -s 200 250 path/to/dir
+    $ pdftoimg -s -w 200 -h 250
+    $ pdftoimg -s -w 200 -h 250 path/to/dir
     
     # Above command plus set a directory and pdftoppm option
-    $ pdftoimg -s 300 250 path/to/dir -gray
+    $ pdftoimg -s -w 300 -h 250 path/to/dir -gray
 
     # Convert the first page of all pdfs in the current directory to dimensions 200x250px jpg files.
-    $ pdftoimg -j -s 200 250
+    $ pdftoimg -s -j -w 200 -h 250
+
+    # Conver the first page of all pdfs in the current directory to width of 300 and height will be determined by the aspect ration of the page
+    $ pdftoimg -s -j -w 300
+
+    # The width will be determined by the aspect ration of the page
+    $ pdftoimg -s -j -h 200    
 
     # Above command plut set a directory and pdftoppm option
-    $ pdftoimg -j -s 200 250 Downloads/test -gray
+    $ pdftoimg -j -s -w 200 -h 250 Downloads/test -gray
 
     # Convert all PDF pages in a target directory.
-    $ pdftoimg -a Downloads/dir
+    $ pdftoimg Downloads/dir
 
 EOF
     exit 2
@@ -82,15 +85,17 @@ while (($# > 0)); do
         echo $version
         exit 0
         ;;
-    -a | --all)
-        all=true
-        shift
+    -g | --height)
+        height=$2
+        shift 2 # shift 2 to bypass switch and its value
         ;;
-    -s | --size)
+    -w | --width)
         # echo "switch $1 with value: $2"
         width=$2
-        height=$3
-        shift 3 # shift 3 to bypass switch and its value
+        shift 2 # shift 2 to bypass switch and its value
+        ;;
+    -s | --single)
+        singlefile="-singlefile"
         ;;
     -h | --help)
         usage
@@ -116,12 +121,18 @@ convert() {
             # check if the length of $singlefile is greater than 0
             # pdftoppm -png sample.pdf image converts pdf to png files 
             # as image-1.png, image-2.png, image-3.png, etc
-            if [[ -n "$singlefile" ]]; then
-                # convert only the single file, -f 1 means page 1
-                # don't add quotes for $2
+            
+            # convert only the single file, -f 1 means page 1
+            if [[ $width > 0 && $height > 0 ]];then
+            # don't add quotes for $2
                 pdftoppm "$file" "$filename" -"${ext}" -f 1 "$singlefile" -scale-to-x "$width" -scale-to-y "$height" $2
+            elif [[ $width > 0 ]];then
+                pdftoppm "$file" "$filename" -"${ext}" -f 1 "$singlefile" -scale-to-x "$width" -scale-to-y -1 $2
+            elif [[ $height > 0 ]];then
+                pdftoppm "$file" "$filename" -"${ext}" -f 1 "$singlefile" -scale-to-x -1 -scale-to-y "$height" $2
             else
-                pdftoppm "$file" "$filename" -"${ext}" -f 1 -scale-to-x "$width" -scale-to-y "$height" $2
+                # scales the long side of each page with 300
+                pdftoppm "$file" "$filename" -"${ext}" -f 1 "$singlefile" -scale-to 300 $2
             fi
         fi
     done
@@ -136,9 +147,9 @@ if ! command -v pdftoppm &>/dev/null; then
 fi
 
 # all pages
-if [ $all == true ]; then
-    singlefile=""
-fi
+# if [ $all == true ]; then
+#     singlefile=""
+# fi
 
 # Find ppm options which have -gray or -something in POSITIONAL array
 ppmopt=$(printf '%s\n' "${POSITIONAL[@]}" | grep "-")
